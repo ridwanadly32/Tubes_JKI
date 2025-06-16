@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Room - Secure Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0; padding: 0;
+            min-height: 100vh;
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(120deg, #f3f4f6 0%, #e0e7ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .container {
+            background: #fcfcfc;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(44, 62, 80, 0.15);
+            padding: 3.5rem 3.5rem 2.5rem 3.5rem;
+            min-width: 400px;
+            max-width: 520px;
+            width: 100%;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            font-family: 'Montserrat', sans-serif;
+            color: #232946;
+            font-size: 2.3rem;
+            font-weight: 800;
+            margin-bottom: 2.2rem;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+        .icon-group {
+            font-size: 2.1rem;
+            color: #6366f1;
+        }
+        .form-create-room {
+            display: flex;
+            gap: 1.1rem;
+            margin-bottom: 2.2rem;
+            width: 100%;
+        }
+        .form-create-room input {
+            flex: 1;
+            padding: 1rem 1.2rem;
+            border-radius: 16px;
+            border: 1.5px solid #ced4da;
+            font-size: 1.1rem;
+            background: #f8fafc;
+            transition: border 0.2s;
+        }
+        .form-create-room input:focus {
+            border: 1.5px solid #6366f1;
+        }
+        .form-create-room button {
+            background: linear-gradient(135deg, #7f9cf5 0%, #a78bfa 100%);
+            color: #fff;
+            border: none;
+            padding: 1rem 2.1rem;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+        }
+        .form-create-room button:hover {
+            background: linear-gradient(135deg, #a78bfa 0%, #7f9cf5 100%);
+            box-shadow: 0 4px 16px rgba(99,102,241,0.18);
+        }
+        .room-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 2.2rem 0;
+            width: 100%;
+        }
+        .room-list li {
+            margin-bottom: 1.1rem;
+        }
+        .room-link {
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+            background: linear-gradient(135deg, #7f9cf5 0%, #a78bfa 100%);
+            color: #fff;
+            padding: 1.1rem 1.7rem;
+            border-radius: 18px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.13rem;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.07);
+            transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+        }
+        .room-link:hover {
+            background: linear-gradient(135deg, #a78bfa 0%, #7f9cf5 100%);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.18);
+        }
+        .room-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7f9cf5 0%, #a78bfa 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+        }
+        .logout-btn {
+            display: inline-block;
+            margin-top: 0.7rem;
+            background: #fff0f0;
+            color: #ef4444;
+            border: 1.5px solid #fecaca;
+            padding: 0.7rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+            box-shadow: 0 2px 8px rgba(239,68,68,0.08);
+        }
+        .logout-btn:hover {
+            background: #ffebeb;
+            color: #dc2626;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.2rem 0.2rem 1.2rem 0.2rem;
+                min-width: 0;
+                max-width: 100vw;
+                border-radius: 0;
+            }
+            h2 {
+                font-size: 1.3rem;
+            }
+            .form-create-room input, .form-create-room button {
+                font-size: 1rem;
+                padding: 0.7rem 0.8rem;
+                border-radius: 10px;
+            }
+            .room-link {
+                font-size: 1rem;
+                padding: 0.7rem 1rem;
+                border-radius: 12px;
+            }
+            .room-avatar {
+                width: 28px; height: 28px; font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2><span class="icon-group">👥</span> Daftar Room</h2>
+        <form class="form-create-room" method="POST">
+            <input type="text" name="room_name" placeholder="Nama Room Baru" required autocomplete="off">
+            <button type="submit">Buat Room</button>
+        </form>
+        <ul class="room-list">
+            {% for room in rooms %}
+                <li><a class="room-link" href="{{ url_for('room_chat', room_id=room.id) }}">
+                    <span class="room-avatar">{{ room.name[0]|upper }}</span>
+                    {{ room.name }}
+                </a></li>
+            {% else %}
+                <li style="color:#64748b;">Belum ada room. Buat room baru!</li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+</body>
+</html> 

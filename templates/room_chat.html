@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room: {{ room.name }} - Secure Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0; padding: 0;
+            min-height: 100vh;
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(120deg, #f3f4f6 0%, #e0e7ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .bg-shape1, .bg-shape2, .bg-shape3 {
+            position: absolute;
+            z-index: 0;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+        }
+        .bg-shape1 {
+            width: 400px; height: 400px;
+            background: linear-gradient(135deg, #dbeafe 0%, #a5b4fc 100%);
+            top: -120px; left: -140px;
+        }
+        .bg-shape2 {
+            width: 300px; height: 300px;
+            background: linear-gradient(135deg, #f3e8ff 0%, #c7d2fe 100%);
+            bottom: -100px; right: -120px;
+        }
+        .bg-shape3 {
+            width: 200px; height: 200px;
+            background: linear-gradient(135deg, #d1fae5 0%, #bbf7d0 100%);
+            top: 60%; left: 10%;
+            opacity: 0.4;
+        }
+        .chat-container {
+            background: rgba(255,255,255,0.7);
+            border-radius: 36px;
+            box-shadow: 0 16px 48px 0 rgba(44, 62, 80, 0.10), 0 1.5px 8px 0 rgba(44,62,80,0.07);
+            backdrop-filter: blur(12px);
+            padding: 2.5rem 3rem 1.5rem 3rem;
+            min-width: 350px;
+            max-width: 700px;
+            width: 100%;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+            position: relative;
+            z-index: 1;
+        }
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            border-bottom: 2px solid #e0e7ff;
+            padding-bottom: 0.7rem;
+        }
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+        .header-icon {
+            font-size: 2.1rem;
+            color: #6366f1;
+        }
+        .chat-header h2 {
+            font-family: 'Montserrat', sans-serif;
+            color: #232946;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .chat-header .room-actions {
+            display: flex;
+            gap: 0.7rem;
+        }
+        .btn-action, .btn-logout {
+            background: linear-gradient(90deg, #6366f1 0%, #a78bfa 100%);
+            color: #fff;
+            border: none;
+            padding: 0.7rem 1.3rem;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(251,194,235,0.10);
+        }
+        .btn-action:hover, .btn-logout:hover {
+            background: linear-gradient(90deg, #a78bfa 0%, #6366f1 100%);
+            box-shadow: 0 4px 16px rgba(251,194,235,0.18);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+            padding-right: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+        .empty-message {
+            text-align: center;
+            margin-top: 50px;
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+        .message {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.9rem;
+            width: 100%;
+            min-height: 60px;
+        }
+        .message.sent {
+            justify-content: flex-end;
+        }
+        .message.received {
+            justify-content: flex-start;
+        }
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+            border: 2.5px solid #fff;
+        }
+        .sent-avatar {
+            margin-left: 0.7rem;
+        }
+        .received-avatar {
+            margin-right: 0.7rem;
+        }
+        .bubble {
+            padding: 0.7rem 1.5rem;
+            border-radius: 18px;
+            min-width: 0;
+            max-width: 98%;
+            word-break: break-word;
+            box-shadow: 0 6px 24px rgba(99,102,241,0.13);
+            display: inline-block;
+            margin-left: 4px;
+            margin-right: 4px;
+            transition: box-shadow 0.2s, background 0.2s;
+        }
+        .sent-bubble {
+            background: linear-gradient(135deg, #7f9cf5 0%, #a78bfa 100%);
+            color: #fff;
+            box-shadow: 0 2px 12px 0 rgba(251,194,235,0.10);
+            align-items: flex-end;
+            border-bottom-right-radius: 8px;
+        }
+        .received-bubble {
+            background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+            color: #fff;
+            box-shadow: 0 2px 12px 0 rgba(161,196,253,0.10);
+            align-items: flex-start;
+            border-bottom-left-radius: 8px;
+        }
+        .bubble-sender {
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            font-size: 1.08rem;
+        }
+        .bubble-original {
+            font-size: 1.05rem;
+            margin-bottom: 0.1rem;
+            word-break: break-word;
+            padding: 0;
+            background: none;
+            border-radius: 0;
+            display: inline;
+        }
+        .bubble-footer {
+            margin-top: 0.2rem;
+            font-size: 0.97rem;
+            color: #b0b3c6;
+            display: flex;
+            gap: 1rem;
+        }
+        .chat-input-area {
+            border-top: 1px solid #ebf0f5;
+            padding-top: 1.2rem;
+            margin-top: 0.5rem;
+            background: rgba(255,255,255,0.85);
+            border-radius: 0 0 24px 24px;
+        }
+        .input-area {
+            display: flex;
+            gap: 0.9rem;
+        }
+        .input-area .form-control {
+            border: 1.5px solid #ced4da;
+            padding: 0.7rem 1.2rem;
+            border-radius: 16px;
+            font-size: 1.08rem;
+            color: #495057;
+            outline: none;
+            background-color: #fff;
+            flex: 1;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.07);
+            transition: border 0.2s;
+        }
+        .input-area .form-control:focus {
+            border: 1.5px solid #6366f1;
+        }
+        .btn-send {
+            background: linear-gradient(90deg, #6366f1 0%, #a78bfa 100%);
+            color: #fff;
+            border: none;
+            padding: 0.7rem 2.1rem;
+            border-radius: 16px;
+            font-size: 1.08rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(251,194,235,0.10);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+        .btn-send:hover {
+            background: linear-gradient(90deg, #a78bfa 0%, #6366f1 100%);
+            box-shadow: 0 4px 16px rgba(251,194,235,0.18);
+        }
+        .send-icon {
+            font-size: 1.3rem;
+            margin-right: 0.2rem;
+        }
+        @media (max-width: 800px) {
+            .chat-container {
+                padding: 0.5rem 0.2rem 0.5rem 0.2rem;
+                min-width: 0;
+                max-width: 100vw;
+                border-radius: 0;
+                height: 100vh;
+            }
+            .chat-header h2 {
+                font-size: 1.1rem;
+            }
+            .header-title {
+                gap: 0.3rem;
+            }
+            .btn-action, .btn-logout {
+                padding: 0.5rem 0.9rem;
+                font-size: 0.95rem;
+                border-radius: 12px;
+            }
+            .avatar {
+                width: 32px; height: 32px; font-size: 0.95rem;
+            }
+            .bubble {
+                padding: 0.6rem 1.1rem;
+                font-size: 0.97rem;
+                max-width: 99%;
+                border-radius: 14px;
+            }
+            .bubble-time-wrapper {
+                max-width: 99%;
+            }
+            .input-area .form-control {
+                padding: 0.6rem 0.7rem;
+                font-size: 1rem;
+                border-radius: 10px;
+            }
+            .btn-send {
+                padding: 0.6rem 1.2rem;
+                font-size: 1rem;
+                border-radius: 10px;
+            }
+            .chat-input-area {
+                border-radius: 0 0 16px 16px;
+                padding-top: 0.7rem;
+            }
+        }
+        .bubble-time-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            max-width: 90%;
+        }
+        .message.received .bubble-time-wrapper {
+            align-items: flex-start;
+        }
+        .scroll-to-bottom-btn {
+            position: absolute;
+            bottom: 90px;
+            right: 32px;
+            background: linear-gradient(135deg, #7f9cf5 0%, #a78bfa 100%);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.18);
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+            z-index: 10;
+        }
+        .scroll-to-bottom-btn.show {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shape1"></div>
+    <div class="bg-shape2"></div>
+    <div class="bg-shape3"></div>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-title">
+                <span class="header-icon">💬</span>
+                <h2>Room: {{ room.name }}</h2>
+            </div>
+            <div class="room-actions">
+                <a href="{{ url_for('rooms') }}" class="btn-action">&larr; Daftar Room</a>
+                <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            {% if chat_history|length == 0 %}
+                <div class="empty-message">Belum ada pesan di room ini. Kirim pesan pertama Anda!</div>
+            {% else %}
+                {% for chat in chat_history %}
+                    <div class="message animate__animated animate__fadeInUp {% if chat.sender == current_user.username %}sent{% else %}received{% endif %}">
+                        {% set avatar_colors = ['#6366f1', '#10b981', '#f59e42', '#f43f5e', '#0ea5e9', '#a21caf'] %}
+                        {% set avatar_bg = avatar_colors[chat.avatar_color_idx] %}
+                        {% if chat.sender == current_user.username %}
+                            <div class="bubble-time-wrapper">
+                                <div class="bubble sent-bubble">
+                                    <div class="bubble-sender">Anda</div>
+                                    <div class="bubble-original">{{ chat.decrypted }}</div>
+                                </div>
+                            </div>
+                            <div class="avatar sent-avatar" style="background: linear-gradient(135deg, #a5b4fc 0%, #c7d2fe 100%);">{{ chat.sender[0]|upper }}</div>
+                        {% else %}
+                            <div class="avatar received-avatar" style="background: {{ avatar_bg }};">{{ chat.sender[0]|upper }}</div>
+                            <div class="bubble-time-wrapper">
+                                <div class="bubble received-bubble">
+                                    <div class="bubble-sender">{{ chat.sender }}</div>
+                                    <div class="bubble-original">{{ chat.decrypted }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <button id="scrollToBottomBtn" class="scroll-to-bottom-btn" title="Scroll ke bawah">&#8595;</button>
+        <div class="chat-input-area">
+            <form id="messageForm">
+                <div class="input-area">
+                    <input type="text" class="form-control" id="messageInput" placeholder="Ketik pesan Anda..." autocomplete="off" required>
+                    <button type="submit" class="btn-send"><span class="send-icon">&#10148;</span> Kirim</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageForm = document.getElementById('messageForm');
+            const messageInput = document.getElementById('messageInput');
+            const chatMessages = document.getElementById('chatMessages');
+            const currentUsername = {{ current_user.username | tojson }};
+
+            function scrollToBottom() {
+                chatMessages.scrollTo({
+                    top: chatMessages.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+            function formatAndDisplayTimestamps() {
+                document.querySelectorAll('.bubble-time, .bubble-time-outside').forEach(function(span) {
+                    const isoTimestamp = span.dataset.timestamp;
+                    if (isoTimestamp) {
+                        span.textContent = moment(isoTimestamp).format('HH:mm');
+                    }
+                });
+            }
+            messageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const message = messageInput.value.trim();
+                if (!message) {
+                    alert('Pesan tidak boleh kosong.');
+                    return;
+                }
+                fetch(window.location.pathname, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        appendMessage(data);
+                        messageInput.value = '';
+                        formatAndDisplayTimestamps();
+                        scrollToBottom();
+                        // Sembunyikan pesan kosong jika ada pesan baru
+                        const emptyMsg = document.querySelector('.empty-message');
+                        if (emptyMsg) emptyMsg.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    alert('Terjadi kesalahan saat mengirim pesan.');
+                });
+            });
+            function appendMessage(chat) {
+                const messageDiv = document.createElement('div');
+                const isSent = chat.sender === currentUsername;
+                const avatarText = chat.sender[0].toUpperCase();
+                messageDiv.className = `message animate__animated animate__fadeInUp ${isSent ? 'sent' : 'received'}`;
+                // Warna avatar konsisten
+                const avatarColors = ['#6366f1', '#10b981', '#f59e42', '#f43f5e', '#0ea5e9', '#a21caf'];
+                const avatarBg = chat.avatar_color_idx !== undefined ? avatarColors[chat.avatar_color_idx] : avatarColors[0];
+                if (isSent) {
+                    messageDiv.innerHTML = `
+                        <div class="bubble-time-wrapper">
+                            <div class="bubble sent-bubble">
+                                <div class="bubble-sender">Anda</div>
+                                <div class="bubble-original">${chat.decrypted}</div>
+                            </div>
+                        </div>
+                        <div class="avatar sent-avatar" style="background: linear-gradient(135deg, #a5b4fc 0%, #c7d2fe 100%);">${avatarText}</div>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="avatar received-avatar" style="background: ${avatarBg};">${avatarText}</div>
+                        <div class="bubble-time-wrapper">
+                            <div class="bubble received-bubble">
+                                <div class="bubble-sender">${chat.sender}</div>
+                                <div class="bubble-original">${chat.decrypted}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                chatMessages.appendChild(messageDiv);
+            }
+            scrollToBottom();
+            formatAndDisplayTimestamps();
+            let lastMessageCount = document.querySelectorAll('.message').length;
+            // Polling AJAX untuk pesan baru
+            setInterval(function() {
+                const roomId = window.location.pathname.split('/').pop();
+                fetch(`/room/${roomId}/messages`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > lastMessageCount) {
+                            // Tambahkan hanya pesan baru
+                            for (let i = lastMessageCount; i < data.length; i++) {
+                                appendMessage(data[i]);
+                            }
+                            lastMessageCount = data.length;
+                            scrollToBottom();
+                            formatAndDisplayTimestamps && formatAndDisplayTimestamps();
+                        }
+                    });
+            }, 2000);
+            // Scroll to bottom button logic
+            const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+            if (chatMessages && scrollToBottomBtn) {
+                chatMessages.addEventListener('scroll', () => {
+                    // Show button if not at the bottom (within a threshold)
+                    if (chatMessages.scrollHeight - chatMessages.scrollTop > chatMessages.clientHeight + 100) { // 100px threshold
+                        scrollToBottomBtn.classList.add('show');
+                    } else {
+                        scrollToBottomBtn.classList.remove('show');
+                    }
+                });
+                scrollToBottomBtn.addEventListener('click', () => {
+                    chatMessages.scrollTo({
+                        top: chatMessages.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html> 
