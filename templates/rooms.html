@@ -79,16 +79,14 @@
             background: linear-gradient(135deg, #a78bfa 0%, #7f9cf5 100%);
             box-shadow: 0 4px 16px rgba(99,102,241,0.18);
         }
-        .room-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 2.2rem 0;
+        .room-list-scrollable {
+            max-height: 320px;
+            overflow-y: auto;
+            margin-bottom: 2.2rem;
             width: 100%;
+            padding: 0;
         }
-        .room-list li {
-            margin-bottom: 1.1rem;
-        }
-        .room-link {
+        .room-item {
             display: flex;
             align-items: center;
             gap: 1.1rem;
@@ -100,12 +98,8 @@
             font-weight: 700;
             font-size: 1.13rem;
             box-shadow: 0 2px 8px rgba(99,102,241,0.07);
-            transition: background 0.2s, box-shadow 0.2s, color 0.2s;
-        }
-        .room-link:hover {
-            background: linear-gradient(135deg, #a78bfa 0%, #7f9cf5 100%);
-            color: #fff;
-            box-shadow: 0 4px 16px rgba(99,102,241,0.18);
+            margin-bottom: 1.1rem;
+            position: relative;
         }
         .room-avatar {
             width: 38px;
@@ -120,6 +114,18 @@
             font-size: 1.2rem;
             flex-shrink: 0;
             box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+        }
+        .delete-room-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.3rem;
+            cursor: pointer;
+            margin-left: auto;
+            transition: color 0.2s;
+        }
+        .delete-room-btn:hover {
+            color: #ef4444;
         }
         .logout-btn {
             display: inline-block;
@@ -154,8 +160,7 @@
                 padding: 0.7rem 0.8rem;
                 border-radius: 10px;
             }
-            .room-link {
-                font-size: 1rem;
+            .room-item {
                 padding: 0.7rem 1rem;
                 border-radius: 12px;
             }
@@ -172,16 +177,23 @@
             <input type="text" name="room_name" placeholder="Nama Room Baru" required autocomplete="off">
             <button type="submit">Buat Room</button>
         </form>
-        <ul class="room-list">
+        <div class="room-list-scrollable">
             {% for room in rooms %}
-                <li><a class="room-link" href="{{ url_for('room_chat', room_id=room.id) }}">
-                    <span class="room-avatar">{{ room.name[0]|upper }}</span>
-                    {{ room.name }}
-                </a></li>
+                <div class="room-item">
+                    <a class="room-link" href="{{ url_for('room_chat', room_id=room.id) }}" style="flex:1;display:flex;align-items:center;text-decoration:none;color:inherit;">
+                        <span class="room-avatar">{{ room.name[0]|upper }}</span>
+                        {{ room.name }}
+                    </a>
+                    <form method="POST" action="{{ url_for('delete_room', room_id=room.id) }}" style="margin:0;">
+                        <button type="submit" class="delete-room-btn" title="Hapus Room" onclick="return confirm('Yakin hapus room ini?')">
+                            🗑️
+                        </button>
+                    </form>
+                </div>
             {% else %}
-                <li style="color:#64748b;">Belum ada room. Buat room baru!</li>
+                <div style="color:#64748b;">Belum ada room. Buat room baru!</div>
             {% endfor %}
-        </ul>
+        </div>
         <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
     </div>
 </body>

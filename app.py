@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from Crypto.Cipher import AES, DES
+from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 import base64
 import os 
@@ -85,24 +85,6 @@ def decrypt_message_aes(encrypted_message, key):
     except Exception as e:
         return f"[DECRYPTION FAILED: {e}]"
 
-# Fungsi untuk mengenkripsi pesan dengan DES
-def encrypt_message_des(message, key):
-    # DES does not have MODE_EAX like AES. Using MODE_CFB instead, which needs an IV.
-    cipher = DES.new(key, DES.MODE_CFB, iv=get_random_bytes(8)) # DES uses 8-byte IV
-    ciphertext = cipher.encrypt(message.encode())
-    return base64.b64encode(cipher.iv + ciphertext).decode()
-
-# Fungsi untuk mendekripsi pesan dengan DES
-def decrypt_message_des(encrypted_message, key):
-    try:
-        data = base64.b64decode(encrypted_message.encode())
-        iv = data[:8] # 8-byte IV for DES
-        ciphertext = data[8:]
-        cipher = DES.new(key, DES.MODE_CFB, iv=iv)
-        return cipher.decrypt(ciphertext).decode()
-    except Exception as e:
-        return f"[DECRYPTION FAILED: {e}]"
-
 # Fungsi hash sederhana untuk warna avatar konsisten per user
 AVATAR_COLOR_COUNT = 6
 
@@ -120,16 +102,16 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(username=email).first()
         if user and user.check_password(password):
             login_user(user)
             session['username'] = user.username
             session['user_id'] = user.id
             return redirect(url_for('rooms'))
         else:
-            error = 'Nama pengguna atau kata sandi tidak valid.'
+            error = 'Email atau kata sandi tidak valid.'
             return render_template('login.html', error=error)
     return render_template('login.html')
 
@@ -138,13 +120,7 @@ def login():
 @app.route('/chat/<int:receiver_id>', methods=['GET', 'POST'])
 @login_required
 def chat(receiver_id):
-    if 'algorithm' not in session:
-        session['algorithm'] = ''
-
-    # Gunakan kunci global untuk semua pesan
-    # Pastikan kunci ini aman di lingkungan produksi, mis. dari variabel lingkungan
     AES_GLOBAL_KEY = os.getenv('AES_KEY', 'SixteenByteKey16').encode() # 16-byte key
-    DES_GLOBAL_KEY = os.getenv('DES_KEY', 'EightKey').encode() # 8-byte key
 
     # Fitur clear chat (POST agar lebih aman)
     if request.method == 'POST' and request.form.get('clear_chat') == '1':
@@ -193,7 +169,6 @@ def chat(receiver_id):
         # Menggunakan request.get_json() karena frontend mengirim sebagai application/json
         data = request.get_json()
         message = data.get('message')
-        algorithm = data.get('algorithm')
         # Pastikan receiver_id diambil dari data JSON, yang harusnya cocok dengan yang aktif di frontend
         posted_receiver_id = data.get('receiver_id')
 
@@ -202,9 +177,6 @@ def chat(receiver_id):
 
         if not posted_receiver_id:
             return jsonify({'error': 'Pilih penerima terlebih dahulu.'}), 400
-
-        if not algorithm:
-            return jsonify({'error': 'Pilih algoritma enkripsi.'}), 400
 
         try:
             posted_receiver_id = int(posted_receiver_id) # Pastikan receiver_id adalah integer
@@ -217,29 +189,15 @@ def chat(receiver_id):
         # Gunakan posted_receiver_id untuk menyimpan pesan
         target_receiver_id = posted_receiver_id
 
-        session['algorithm'] = algorithm
-
-        if algorithm == 'AES':
-            key = AES_GLOBAL_KEY
-            encrypted_message = encrypt_message_aes(message, key)
-            # Tidak lagi melakukan dekripsi di sini saat mengirim
-            decrypted_message_on_send = None # Set to None, as it's not immediately decrypted for storage
-        elif algorithm == 'DES':
-            key = DES_GLOBAL_KEY
-            encrypted_message = encrypt_message_des(message, key)
-            # Tidak lagi melakukan dekripsi di sini saat mengirim
-            decrypted_message_on_send = None
-        else:
-            encrypted_message = ''
-            decrypted_message_on_send = None
+        encrypted_message = encrypt_message_aes(message, AES_GLOBAL_KEY)
 
         # Simpan ke database
         chat_msg = ChatMessage(
             sender_id=current_user.id,
             receiver_id=target_receiver_id,
-            algorithm=algorithm,
+            algorithm='AES',
             encrypted=encrypted_message,
-            decrypted=decrypted_message_on_send # Simpan sebagai None saat mengirim
+            decrypted=None
         )
         db.session.add(chat_msg)
         db.session.commit()
@@ -252,7 +210,7 @@ def chat(receiver_id):
         return jsonify({
             'sender': current_user.username,
             'receiver': response_receiver_username,
-            'algorithm': algorithm,
+            'algorithm': 'AES',
             'original': message, # Mengirim pesan asli
             'encrypted': encrypted_message,
             'timestamp': datetime.now().isoformat()
@@ -275,17 +233,12 @@ def chat(receiver_id):
             receiver_username_msg = receiver_user_msg.username if receiver_user_msg else "Unknown User"
 
             # Dekripsi ulang dengan kunci global untuk tampilan jika perlu (saat mengambil histori)
-            if c.algorithm == 'AES':
-                current_decrypted_for_display = decrypt_message_aes(c.encrypted, AES_GLOBAL_KEY)
-            elif c.algorithm == 'DES':
-                current_decrypted_for_display = decrypt_message_des(c.encrypted, DES_GLOBAL_KEY)
-            else:
-                current_decrypted_for_display = "" # Fallback if algorithm is unknown
+            current_decrypted_for_display = decrypt_message_aes(c.encrypted, AES_GLOBAL_KEY)
 
             chat_history_data.append({
                 'sender': sender_username,
                 'receiver': receiver_username_msg,
-                'algorithm': c.algorithm,
+                'algorithm': 'AES',
                 'original': c.original, 
                 'encrypted': c.encrypted,
                 'decrypted': current_decrypted_for_display, # Ini adalah pesan yang didekripsi untuk tampilan
@@ -301,7 +254,7 @@ def chat(receiver_id):
                            selected_receiver_username=receiver_username,
                            chat_history=chat_history_data,
                            current_user=current_user,
-                           selected_algorithm=session.get('algorithm', 'AES'))
+                           selected_algorithm='AES')
 
 @app.route('/logout', methods=['GET', 'POST'])
 @login_required
@@ -441,6 +394,23 @@ def room_messages(room_id):
             'timestamp': c.timestamp.isoformat()
         })
     return jsonify(chat_history_data)
+
+@app.route('/delete_room/<int:room_id>', methods=['POST'])
+@login_required
+def delete_room(room_id):
+    room = Room.query.get_or_404(room_id)
+    # Hanya user yang tergabung di room yang bisa hapus
+    membership = RoomMember.query.filter_by(user_id=current_user.id, room_id=room.id).first()
+    if not membership:
+        return redirect(url_for('rooms'))
+    # Hapus semua pesan di room
+    ChatMessage.query.filter_by(room_id=room.id).delete()
+    # Hapus semua membership di room
+    RoomMember.query.filter_by(room_id=room.id).delete()
+    # Hapus room
+    db.session.delete(room)
+    db.session.commit()
+    return redirect(url_for('rooms'))
 
 if __name__ == '__main__':
     with app.app_context():

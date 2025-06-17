@@ -712,12 +712,12 @@
                                 <div class="bubble-sender">Anda → {{ chat.receiver }}</div>
                                 <div class="bubble-label">Original:</div>
                                 <div class="bubble-original">{{ chat.original }}</div>
-                                <div class="bubble-label">Encrypted ({{ chat.algorithm }}):</div>
+                                <div class="bubble-label">Encrypted (AES):</div>
                                 <div class="bubble-encrypted">{{ chat.encrypted }}</div>
                                 {# <div class="bubble-label">Decrypted:</div>
                                 <div class="bubble-decrypted">{{ chat.decrypted }}</div> #}
                                 <div class="bubble-footer">
-                                    <span class="bubble-algorithm">{{ chat.algorithm }}</span>
+                                    <span class="bubble-algorithm">AES</span>
                                     <span class="bubble-time" data-timestamp="{{ chat.timestamp }}"></span>
                                 </div>
                             </div>
@@ -730,12 +730,12 @@
                                 <div class="bubble-sender">{{ chat.sender }} → Anda</div>
                                 <div class="bubble-label">Original:</div>
                                 <div class="bubble-original">{{ chat.original }}</div>
-                                <div class="bubble-label">Encrypted ({{ chat.algorithm }}):</div>
+                                <div class="bubble-label">Encrypted (AES):</div>
                                 <div class="bubble-encrypted">{{ chat.encrypted }}</div>
                                 {# <div class="bubble-label">Decrypted:</div>
                                 <div class="bubble-decrypted">{{ chat.decrypted }}</div> #}
                                 <div class="bubble-footer">
-                                    <span class="bubble-algorithm">{{ chat.algorithm }}</span>
+                                    <span class="bubble-algorithm">AES</span>
                                     <span class="bubble-time" data-timestamp="{{ chat.timestamp }}"></span>
                                 </div>
                             </div>
@@ -758,11 +758,6 @@
             <div class="chat-input-area" id="chatInputArea" {% if not selected_receiver_id %}style="display: none;"{% endif %}>
                 <form method="POST" action="{{ url_for('chat') }}" id="messageForm">
                     <div class="input-area">
-                        <select class="form-select" id="algorithmSelect" name="algorithm">
-                            <option value="" disabled {% if selected_algorithm == '' %}selected{% endif %}>Pilih Algoritma</option>
-                            <option value="AES" {% if selected_algorithm == 'AES' %}selected{% endif %}>Advanced Encryption Standard (AES)</option>
-                            <option value="DES" {% if selected_algorithm == 'DES' %}selected{% endif %}>Data Encryption Standard (DES)</option>
-                        </select>
                         <input type="text" class="form-control" id="messageInput" placeholder="Ketik pesan Anda..." autocomplete="off">
                         <button type="submit" class="btn-send"><i class="bi bi-send-fill"></i> Kirim</button>
                     </div>
@@ -786,8 +781,6 @@
             const messageForm = document.getElementById('messageForm');
             const messageInput = document.getElementById('messageInput');
             const chatMessages = document.getElementById('chatMessages');
-            const algorithmSelect = document.getElementById('algorithmSelect');
-            const sendButton = messageForm ? messageForm.querySelector('.btn-send') : null;
             const currentUserId = {{ current_user.id | tojson }};
             const currentUsername = {{ current_user.username | tojson }};
             let selectedReceiverId = {{ selected_receiver_id | tojson }};
@@ -815,7 +808,7 @@
                 });
             }
 
-            function updateChatUI(chatHistory, receiverId, receiverUsername, selectedAlgorithm) {
+            function updateChatUI(chatHistory, receiverId, receiverUsername) {
                 // Update selectedReceiverId and Username global vars
                 selectedReceiverId = receiverId;
                 selectedReceiverUsername = receiverUsername;
@@ -875,11 +868,6 @@
                      chatMessages.innerHTML = `<div style="text-align: center; margin-top: 50px; color: #64748b; font-size: 1.2rem;">Belum ada pesan dengan ${selectedReceiverUsername}. Kirim pesan pertama Anda!</div>`;
                 }
 
-                // Update algorithm select default
-                if (algorithmSelect) {
-                    algorithmSelect.value = selectedAlgorithm || '';
-                }
-
                 // Update sidebar active class
                 userLinks.forEach(link => {
                     if (link.dataset.receiverId == selectedReceiverId) {
@@ -909,10 +897,10 @@
                         <div class="bubble-sender">${senderDisplay}</div>
                         <div class="bubble-label">Original:</div>
                         <div class="bubble-original">${chat.original}</div>
-                        <div class="bubble-label">Encrypted (${chat.algorithm}):</div>
+                        <div class="bubble-label">Encrypted (AES):</div>
                         <div class="bubble-encrypted">${chat.encrypted}</div>
                         <div class="bubble-footer">
-                            <span class="bubble-algorithm">${chat.algorithm}</span>
+                            <span class="bubble-algorithm">AES</span>
                             <span class="bubble-time" data-timestamp="${chat.timestamp}"></span>
                         </div>
                     </div>
@@ -922,10 +910,10 @@
                         <div class="bubble-sender">${senderDisplay}</div>
                         <div class="bubble-label">Original:</div>
                         <div class="bubble-original">${chat.original}</div>
-                        <div class="bubble-label">Encrypted (${chat.algorithm}):</div>
+                        <div class="bubble-label">Encrypted (AES):</div>
                         <div class="bubble-encrypted">${chat.encrypted}</div>
                         <div class="bubble-footer">
-                            <span class="bubble-algorithm">${chat.algorithm}</span>
+                            <span class="bubble-algorithm">AES</span>
                             <span class="bubble-time" data-timestamp="${chat.timestamp}"></span>
                         </div>
                     </div>`
@@ -997,7 +985,7 @@
                                 window.location.reload();
                             }
                         } else {
-                            updateChatUI(data.chat_history, data.selected_receiver_id, data.selected_receiver_username, data.selected_algorithm);
+                            updateChatUI(data.chat_history, data.selected_receiver_id, data.selected_receiver_username);
                             formatAndDisplayTimestamps();
                             history.pushState(null, '', `/chat/${data.selected_receiver_id}`);
                         }
@@ -1014,7 +1002,6 @@
                 messageForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const message = messageInput.value.trim();
-                    const algorithm = algorithmSelect.value;
 
                     if (!selectedReceiverId) {
                         showAlert('Peringatan', 'Silakan pilih penerima terlebih dahulu dari sidebar.', 'warning');
@@ -1023,10 +1010,6 @@
 
                     if (!message) {
                         showAlert('Peringatan', 'Pesan tidak boleh kosong. Silakan isi pesan.', 'warning');
-                        return;
-                    }
-                    if (!algorithm) {
-                        showAlert('Peringatan', 'Silakan pilih algoritma enkripsi.', 'warning');
                         return;
                     }
 
@@ -1038,7 +1021,6 @@
                         },
                         body: JSON.stringify({
                             message: message,
-                            algorithm: algorithm,
                             receiver_id: selectedReceiverId
                         })
                     })
